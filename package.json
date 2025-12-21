@@ -1,5 +1,35 @@
 {
   "dependencies": {
-    "express": "^5.1.0"
+    "bcrypt": "^6.0.0",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
+    "mongoose": "^8.19.2",
+    "morgan": "^1.10.1",
+    "nodemon": "^3.1.10"
+  },
+  "name": "node_js_backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/sever.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HuynhKimHuy/study_nodejs.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/HuynhKimHuy/study_nodejs/issues"
+  },
+  "homepage": "https://github.com/HuynhKimHuy/study_nodejs#readme",
+  "devDependencies": {
+    "compression": "^1.8.1",
+    "helmet": "^8.1.0"
   }
 }
