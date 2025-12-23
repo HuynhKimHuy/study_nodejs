@@ -6,10 +6,10 @@ import KeytokenService from './keyToken.service.js'
 import { createTokenPair } from '../auth/authUntil.js'
 import getDataShop from '../untils/getShopdata.js'
 const roles = {
-    SHOP:'SHOP',
-    WRITE:'WRITE',
-    EDITOR:'EDITOR',
-    ADMIN:'ADMIN'
+    SHOP: 'SHOP',
+    WRITE: 'WRITE',
+    EDITOR: 'EDITOR',
+    ADMIN: 'ADMIN'
 }
 
 /**
@@ -22,39 +22,39 @@ const roles = {
  */
 class AccessService {
     // nhận vào tên shop mật khẩu và email 
-    static SignUp = async ({name, email, password})=>{
-        if(!email){
+    static SignUp = async ({ name, email, password }) => {
+        if (!email) {
             // nếu email không có báo lõi 
             return {
-                code:'400',
+                code: '400',
                 message: 'email exits',
-                status:'BAD REQUEST'
+                status: 'BAD REQUEST'
             }
         }
         // dùng findOne check mail xem đã tồn tại chưa 
-        try{
+        try {
             // step1: check email exists??
-            const shop = await shopModel.findOne({email}).lean()
+            const shop = await shopModel.findOne({ email }).lean()
             // nếu có báo lõi 
-            if(shop){
+            if (shop) {
                 return {
-                    code:'xxx',
-                    message:"shop already registered"
+                    code: 'xxx',
+                    message: "shop already registered"
                 }
             }
-            
+
             // dùng bcrypt hash mật khẩu 
-            const hashPassword = await bcrypt.hash(password,10)
+            const hashPassword = await bcrypt.hash(password, 10)
             // create NewShop
             const newShop = await shopModel.create({
                 name: name || "Kim Huy",
                 email: email || "huy@email.com",
                 password: hashPassword || password,
-                roles:[roles.SHOP]
-                
+                roles: [roles.SHOP]
+
             })
-            
-            if(!newShop){
+
+            if (!newShop) {
                 throw new Error('Failed to create shop');
             }
 
@@ -70,52 +70,53 @@ class AccessService {
             //         type:'pkcs1',
             //         format:'pem'
             //     }
-                
+
             // })
 
             const privateKey = crypto.randomBytes(64).toString('hex')
             const publicKey = crypto.randomBytes(64).toString('hex')
-            console.log(privateKey,publicKey); //save colection keystore
+            console.log(privateKey, publicKey); //save colection keystore
 
             // bắt đầu tạo và lưu vào model 
             const keyShop = await KeytokenService.createToken({
                 userID: newShop._id,
                 publicKey: publicKey,
-                privateKey:privateKey
+                privateKey: privateKey
             })
 
-            if(!keyShop){
+            if (!keyShop) {
                 return {
-                    code:'201',
-                    message:"keyShop errorr"
+                    code: '201',
+                    message: "keyShop errorr"
                 }
             }
-            console.log(`keyShop::`,keyShop)
+            
+            console.log(`keyShop::`, keyShop)
 
-            const tokens = await createTokenPair({payload : newShop._id , email}, publicKey,privateKey )
+            const tokens = await createTokenPair({ payload: newShop._id, email }, publicKey, privateKey)
 
-            if(tokens) {
+            if (tokens) {
                 console.log(`Created token success :: ${tokens}`);
             }
-            
+
             return {
-                code : 200,
+                code: 200,
                 metadata: {
-                    shop: getDataShop({fileds:['_id','name','email'], object:newShop}) ,
+                    shop: getDataShop({ fileds: ['_id', 'name', 'email'], object: newShop }),
                     tokens
                 }
             }
         }
-        catch(error){
+        catch (error) {
             console.log(error);
-            
-            return{
-                code:'xxxx',
-                message:error.message,
-                status:'error'
+
+            return {
+                code: 'xxxx',
+                message: error.message,
+                status: 'error'
             }
         }
-    } 
+    }
 }
 
 export default AccessService
