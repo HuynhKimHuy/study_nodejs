@@ -5,6 +5,7 @@ import shopModel from '../model/schema.js'
 import KeytokenService from './keyToken.service.js'
 import { createTokenPair } from '../auth/authUntil.js'
 import getDataShop from '../untils/getShopdata.js'
+import { badRequestError } from '../core/error.respone.js'
 const roles = {
     SHOP: 'SHOP',
     WRITE: 'WRITE',
@@ -23,25 +24,15 @@ const roles = {
 class AccessService {
     // nhận vào tên shop mật khẩu và email 
     static SignUp = async ({ name, email, password }) => {
-        a
-        if (!email) {
-            // nếu email không có báo lõi 
-            return {
-                code: '400',
-                message: 'email exits',
-                status: 'BAD REQUEST'
-            }
-        }
+        
         // dùng findOne check mail xem đã tồn tại chưa 
         // try {
             // step1: check email exists??
+            
             const shop = await shopModel.findOne({ email }).lean()
             // nếu có báo lõi 
             if (shop) {
-                return {
-                    code: 'xxx',
-                    message: "shop already registered"
-                }
+                 throw new  badRequestError("Error: Shop already registered  ")
             }
 
             // dùng bcrypt hash mật khẩu 
@@ -86,10 +77,7 @@ class AccessService {
             })
 
             if (!keyShop) {
-                return {
-                    code: '201',
-                    message: "keyShop errorr"
-                }
+               throw new badRequestError("Key store Error")
             }
             
             console.log(`keyShop::`, keyShop)

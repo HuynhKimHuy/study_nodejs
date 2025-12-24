@@ -66,7 +66,11 @@ export const permissions =(permission)=>{
     
 }
 
-
+export const asyncHandler = fn=>{
+    return(req,res,next)=>{
+        fn(req,res,next).catch(next)
+    }
+}
 
 /**
  * lấy header[HEAER.API_KEY], đưa vào hàm findByid tự tạo , dùng findOne lấy ra obj của schema đó , xong gán vào req, 

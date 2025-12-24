@@ -10,6 +10,7 @@ import router from '../routes/index.js';
 import mongoose from 'mongoose';
 mongoose.set('debug', true)
 import Database from '../dbs/init.mongodb.js'
+import { log } from 'console';
 dotenv.config()
 
 Database.getInstance()
@@ -43,4 +44,7 @@ app.use((error,req,res,next)=>{
         message:error.message
     })
 })
+
+
+
 export default app
