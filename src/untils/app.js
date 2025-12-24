@@ -29,4 +29,18 @@ app.use(compression())
 // checkOverLoad();
 app.use('/',router)
 
+app.use((req,res,next)=>{
+    const error = new Error('Not Found')
+    error.status = 404
+    next(error)
+})
+
+app.use((error,req,res,next)=>{
+    const statusError =  error.status || 500
+    res.status(statusError).json({
+        code:statusError,
+        status:"error",
+        message:error.message
+    })
+})
 export default app

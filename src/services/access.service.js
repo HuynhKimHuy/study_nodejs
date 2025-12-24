@@ -23,6 +23,7 @@ const roles = {
 class AccessService {
     // nhận vào tên shop mật khẩu và email 
     static SignUp = async ({ name, email, password }) => {
+        a
         if (!email) {
             // nếu email không có báo lõi 
             return {
@@ -32,7 +33,7 @@ class AccessService {
             }
         }
         // dùng findOne check mail xem đã tồn tại chưa 
-        try {
+        // try {
             // step1: check email exists??
             const shop = await shopModel.findOne({ email }).lean()
             // nếu có báo lõi 
@@ -106,16 +107,16 @@ class AccessService {
                     tokens
                 }
             }
-        }
-        catch (error) {
-            console.log(error);
+        // }
+        // catch (error) {
+        //     console.log(error);
 
-            return {
-                code: 'xxxx',
-                message: error.message,
-                status: 'error'
-            }
-        }
+        //     return {
+        //         code: 'xxxx',
+        //         message: error.message,
+        //         status: 'error'
+        //     }
+        // }
     }
 }
 
