@@ -4,7 +4,7 @@ const StatusCode ={
 }
 
 const ResponseStatusCode = {
-     FORBIDDEN:'Bad Request', //Khog co quyen truy cap 
+     FORBIDDEN:'Forbidden', //Khog co quyen truy cap 
      CONFLICT: "conflict Error"  // trung khop voi db 
 }
 class ErrorResponse extends Error{
@@ -13,15 +13,14 @@ class ErrorResponse extends Error{
         this.status = status
     }
 }
-
+export class BadRequestError extends ErrorResponse {
+  constructor(message = ResponseStatusCode.FORBIDDEN, statusCode = StatusCode.FORBIDDEN) {
+    super(message, statusCode);
+  }
+}
 export  class ConflictRequestError extends ErrorResponse{
-    constructor( message = ResponseStatusCode.CONFLICT, statusCode =StatusCode.FORBIDDEN ){
+    constructor( message = ResponseStatusCode.CONFLICT, statusCode =StatusCode.CONFLICT ){
         super(message,statusCode)
     }
 }
 
-export  class badRequestError extends ConflictRequestError{
-    constructor( message = ResponseStatusCode.CONFLICT, statusCode =StatusCode.FORBIDDEN ){
-        super(message,statusCode)
-    }
-}

@@ -6,9 +6,10 @@ const router = express.Router()
 
 // router.use(apiKey)
 
-// // check quyền user
+// // // check quyền user
 // router.use(permissions(`0000`))
-router.use('/v1/api',AccessRouter)
 
+
+router.use('/v1/api',AccessRouter)
 
 export default router

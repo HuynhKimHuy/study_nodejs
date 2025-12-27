@@ -5,7 +5,7 @@ import shopModel from '../model/schema.js'
 import KeytokenService from './keyToken.service.js'
 import { createTokenPair } from '../auth/authUntil.js'
 import getDataShop from '../untils/getShopdata.js'
-import { badRequestError } from '../core/error.respone.js'
+import { BadRequestError } from '../core/error.respone.js'
 const roles = {
     SHOP: 'SHOP',
     WRITE: 'WRITE',
@@ -32,7 +32,7 @@ class AccessService {
             const shop = await shopModel.findOne({ email }).lean()
             // nếu có báo lõi 
             if (shop) {
-                 throw new  badRequestError("Error: Shop already registered  ")
+                 throw new  BadRequestError("Error: Shop already registered ")
             }
 
             // dùng bcrypt hash mật khẩu 

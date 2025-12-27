@@ -21,12 +21,10 @@ export const apiKey = async (req, res, next) => {
         const key = req.headers[HEADER.API_KEY]?.toString()
         if (!key) {
             return res.status(403).json({
-                message: "Forbiden Error from header",
-                
+                message: "Forbiden Error from Header",
             })
         }
         console.log(key);
-        
         const objKeys = await findByID(key)
 
         if (!objKeys) {
@@ -66,7 +64,7 @@ export const permissions =(permission)=>{
     
 }
 
-export const asyncHandler = fn=>{
+export const asyncHandler =fn=>{
     return(req,res,next)=>{
         fn(req,res,next).catch(next)
     }
