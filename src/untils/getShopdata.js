@@ -1,7 +1,5 @@
 import _ from "lodash"
 
-const getDataShop = ({fileds = [], object = {}})=>{
-    return _.pick({fileds,object})
-}
+const getDataShop = ({ fields = [], object = {} }) => _.pick(object, fields)
 
 export default getDataShop

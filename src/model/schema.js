@@ -29,10 +29,7 @@ const ShopSchema  = new mongoose.Schema({
     type: Schema.Types.Boolean, 
     default:false
   },
-  roles:{
-    type: Array,
-    default:[]
-  }
+  
 },
   {
     timestamps:true,

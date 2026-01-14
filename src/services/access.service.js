@@ -5,7 +5,8 @@ import shopModel from '../model/schema.js'
 import KeytokenService from './keyToken.service.js'
 import { createTokenPair } from '../auth/authUntil.js'
 import getDataShop from '../untils/getShopdata.js'
-import { BadRequestError } from '../core/error.respone.js'
+import { BadRequestError, AuthFailureError } from '../core/error.respone.js'
+import findByEmail from './shop.service.js'
 const roles = {
     SHOP: 'SHOP',
     WRITE: 'WRITE',
@@ -13,37 +14,52 @@ const roles = {
     ADMIN: 'ADMIN'
 }
 
-/**
- * Hàm access có 1 hàm static nhận vào 3 tham số ({name , email , password}) , Email là bắc buột  check điều kiện 
- * step 1 : check email exists 
- * step 2 : const hash mật khẩu bằng Bcryt.hash( nhận vào mật khẩu và muối )
- * step 3 : model shop tạo shop , nhận vào mật khẩu là password được hash 
- * step 4 : tạo publicKey , privated bằng crypto.generateKeyPairSync( 'tên thuật toán', { modulelength : 4096})
- * step 5 : 
- */
 class AccessService {
-    // nhận vào tên shop mật khẩu và email 
-    static SignUp = async ({ name, email, password }) => {
+    static login = async ({email , password, refreshToken = null})=>{
         
-        // dùng findOne check mail xem đã tồn tại chưa 
-        // try {
-            // step1: check email exists??
-            
-            const shop = await shopModel.findOne({ email }).lean()
-            // nếu có báo lõi 
+        
+        // step 1 : check sevice.js 
+        const foundShop = await findByEmail({email})
+        
+        if(!foundShop){
+           throw new BadRequestError("Cannot Find Shop")
+        }
+        
+        const mathPass = await bcrypt.compare(password, foundShop.password)
+
+        if(!mathPass){
+             throw new AuthFailureError("Invalid password")
+        }
+
+        // step 2 
+        const privateKey = crypto.randomBytes(64).toString('hex')
+        const publicKey = crypto.randomBytes(64).toString('hex')
+
+        // step 3 
+        const tokens = await createTokenPair({ userID: foundShop._id, email: foundShop.email }, publicKey, privateKey)
+        if(!tokens.refreshToken){
+            throw new BadRequestError("khong co request token")
+        }
+        await KeytokenService.createToken({userID:foundShop._id, publicKey:publicKey, privateKey:privateKey, refreshToken:tokens.refreshToken })
+        
+        return {
+            shop:getDataShop({ fields: ['_id', 'name','email'],object:foundShop}),
+            tokens
+        }
+    }
+
+    static SignUp = async ({ name, email, password }) => {
+             const shop = await shopModel.findOne({ email }).lean()
             if (shop) {
                  throw new  BadRequestError("Error: Shop already registered ")
             }
 
-            // dùng bcrypt hash mật khẩu 
             const hashPassword = await bcrypt.hash(password, 10)
-            // create NewShop
             const newShop = await shopModel.create({
                 name: name || "Kim Huy",
                 email: email || "huy@email.com",
                 password: hashPassword || password,
                 roles: [roles.SHOP]
-
             })
 
             if (!newShop) {
@@ -67,23 +83,23 @@ class AccessService {
 
             const privateKey = crypto.randomBytes(64).toString('hex')
             const publicKey = crypto.randomBytes(64).toString('hex')
-            console.log(privateKey, publicKey); //save colection keystore
-
-            // bắt đầu tạo và lưu vào model 
+            
+          
             const keyShop = await KeytokenService.createToken({
                 userID: newShop._id,
-                publicKey: publicKey,
-                privateKey: privateKey
+                privateKey: privateKey,
+                publicKey: publicKey
             })
 
             if (!keyShop) {
-               throw new badRequestError("Key store Error")
+               throw new BadRequestError("Key store Error")
             }
             
             console.log(`keyShop::`, keyShop)
 
-            const tokens = await createTokenPair({ payload: newShop._id, email }, publicKey, privateKey)
+            const tokens = await createTokenPair({ userID: newShop._id, email }, publicKey, privateKey)
 
+            
             if (tokens) {
                 console.log(`Created token success :: ${tokens}`);
             }
@@ -91,20 +107,14 @@ class AccessService {
             return {
                 code: 200,
                 metadata: {
-                    shop: getDataShop({ fileds: ['_id', 'name', 'email'], object: newShop }),
+                    shop: getDataShop({ fields: ['_id', 'name', 'email'], object: newShop }),
                     tokens
                 }
             }
-        // }
-        // catch (error) {
-        //     console.log(error);
+    }
 
-        //     return {
-        //         code: 'xxxx',
-        //         message: error.message,
-        //         status: 'error'
-        //     }
-        // }
+    static logout = async (keyStore)=>{
+        return await KeytokenService.removeKeyByID(keyStore._id)
     }
 }
 

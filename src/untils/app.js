@@ -7,7 +7,6 @@ import compression from 'compression';
 import { countConect, checkOverLoad } from "../helpers/check.connect.js";
 import dotenv from 'dotenv';
 import router from '../routes/index.js';
-import mongoose from 'mongoose';
 // mongoose.set('debug', true)
 import Database from '../dbs/init.mongodb.js'
 

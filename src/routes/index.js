@@ -4,11 +4,8 @@ import {apiKey,permissions} from '../auth/checkAuth.js';
 
 const router = express.Router()
 
-// router.use(apiKey)
-
-// // // check quyền user
-// router.use(permissions(`0000`))
-
+router.use(apiKey)
+router.use(permissions(`0000`))
 
 router.use('/v1/api',AccessRouter)
 
