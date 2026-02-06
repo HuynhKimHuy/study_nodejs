@@ -20,14 +20,12 @@ const HEADER = {
 export const apiKey = async (req, res, next) => {
         
         const key = req.headers[HEADER.API_KEY]?.toString()
-    
         if(!key){
             throw new BadRequestError("Forbiden Error form Header")
         }
         console.log(key);
         
         const objKeys = await findByID(key)
-
         if (!objKeys) {
             throw new BadRequestError("Cannot find OBJ key in db ")
         }
@@ -56,13 +54,6 @@ export const permissions =(permission)=>{
 
          return next()
     }
-    
 }
 
 
-
-/**
- * lấy header[HEAER.API_KEY], đưa vào hàm findByid tự tạo , dùng findOne lấy ra obj của schema đó , xong gán vào req, 
- * 
- * 
- */

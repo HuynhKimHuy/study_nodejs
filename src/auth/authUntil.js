@@ -7,33 +7,9 @@ import KeyTokenService from '../services/keyToken.service.js'
 const HEADER = {
     API_KEY: 'x-api-key',
     CLIENT_ID: 'x-client-id',
-    AUTHORIZATION: 'authorization'
+    AUTHORIZATION: 'authorization',
+    REFRESHTOKEN: 'refreshtoken'
 }
-
-export const createTokenPair = async (payload, publicKey, privateKey) => {
-    try {
-        const accessToken = JWT.sign(payload, privateKey, {
-            expiresIn: '2days'
-        })
-
-        const refreshToken = JWT.sign(payload, privateKey, {
-            expiresIn: '7 days'
-        })
-
-        JWT.verify(accessToken, privateKey, (err, decode) => {
-            if (err) {
-                console.log("error verify", err);
-            }
-            else {
-                console.log('decode verify', decode)
-            }
-        })
-        return { accessToken, refreshToken }
-    } catch (error) {
-        throw error
-    }
-}
-
 
 // authentication 
 /*
@@ -44,12 +20,28 @@ step4 : check user in db
 step5 : check keystore with userID
 step6 : If ok => Next
 */
+
 export const authentication = asyncHandler(async (req, res, next) => {
     const userID = req.headers[HEADER.CLIENT_ID]
     if (!userID) throw new AuthFailureError('Invalid Request')
 
     const keyStore = await KeyTokenService.findByID(userID)
     if (!keyStore) throw new AuthFailureError('Cannot find Keystore')
+
+        
+    if (req.headers[HEADER.REFRESHTOKEN]) {
+        try {
+            const refreshToken = req.headers[HEADER.REFRESHTOKEN]
+            const decode = JWT.verify(refreshToken, keyStore.privateKey)
+
+            req.keyStore = keyStore
+            req.user = decode
+            req.refreshToken = refreshToken
+            return next()
+        } catch (error) {
+            throw error
+        }
+    }
 
     const accessToken = req.headers[HEADER.AUTHORIZATION]
     if (!accessToken) throw new AuthFailureError('Invalid Request')
@@ -64,4 +56,30 @@ export const authentication = asyncHandler(async (req, res, next) => {
     catch (error) {
         throw error
     }
+    
 })
+
+
+export const createTokenPair = async (payload, publicKey, privateKey) => {
+    const accessToken = JWT.sign(payload, privateKey, { expiresIn: '2days' })
+    const refreshToken = JWT.sign(payload, privateKey, { expiresIn: '7 days' })
+
+    JWT.verify(accessToken, publicKey, (error, decode) => {
+        if (error) {
+            console.log(`error verify : `, error);
+
+        }
+        else {
+            console.log(`decode verify`, decode);
+
+        }
+    })
+    return { accessToken, refreshToken }
+}
+
+
+
+
+export const verifyJWT = async (token, keySecret) => {
+    return await JWT.verify(token, keySecret)
+}

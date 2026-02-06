@@ -1,0 +1,246 @@
+# Tổng quan & luồng đi của project (study_nodejs)
+
+Tài liệu này mô tả **luồng đi** của ứng dụng và **cấu trúc thư mục** để khi quay lại có thể hiểu nhanh toàn bộ hệ thống.
+
+---
+
+## 1) Cấu trúc thư mục tổng quát
+
+```
+study_nodejs/
+├─ package.json
+├─ package-lock.json
+├─ read.tx                 # (file ghi chú cũ)
+├─ read.txm                # (file bạn đang đọc)
+├─ README.md               # mô tả luồng auth (login/signup/logout)
+├─ node_modules/
+└─ src/
+   ├─ sever.js             # entrypoint chạy server (nodemon chạy file này)
+   ├─ untils/
+   │  ├─ app.js            # khởi tạo Express + middleware + router
+   │  └─ getShopdata.js     # helper lấy field cần thiết từ object
+   ├─ routes/
+   │  ├─ index.js           # router gốc, gắn middleware apiKey + permissions
+   │  └─ access/
+   │     └─ index.js        # các route /shop/signup, /shop/login, /shop/logout
+   ├─ controller/
+   │  └─ access.controller.js  # controller cho signup/login/logout
+   ├─ services/
+   │  ├─ access.service.js     # nghiệp vụ auth (signup/login/logout)
+   │  ├─ apiKey.service.js     # tìm API key trong DB
+   │  ├─ keyToken.service.js   # lưu & lấy cặp key/token
+   │  └─ shop.service.js       # tìm shop theo email
+   ├─ auth/
+   │  ├─ checkAuth.js       # middleware apiKey + permissions
+   │  └─ authUntil.js       # tạo token + middleware authentication
+   ├─ model/
+   │  ├─ schema.js          # model Shop (shops)
+   │  ├─ keytoken.model.js  # model Key Token (keys)
+   │  └─ keyAPI.js          # model API Key (ApiKeys)
+   ├─ dbs/
+   │  └─ init.mongodb.js    # kết nối MongoDB (singleton)
+   ├─ configs/
+   │  └─ config.mongodb.js  # cấu hình MongoDB theo env
+   ├─ helpers/
+   │  ├─ asyncHandler.js    # bọc async để xử lý lỗi
+   │  └─ check.connect.js   # thống kê connect DB
+   └─ core/
+      ├─ success.response.js # chuẩn hoá response OK/Created
+      └─ error.respone.js    # chuẩn hoá error
+```
+
+---
+
+## 2) Luồng khởi động ứng dụng (startup flow)
+
+1) **Chạy server**
+   - Lệnh chạy: `npm run dev` → `nodemon src/sever.js` (xem `package.json`).
+
+2) **Entry point** (`src/sever.js`)
+   - Import app từ `src/untils/app.js`.
+   - Lắng nghe PORT (mặc định 3052).
+   - Bắt SIGINT để đóng server.
+
+3) **Tạo Express App** (`src/untils/app.js`)
+   - Load env (`dotenv`).
+   - Kết nối DB bằng `Database.getInstance()`.
+   - Gắn middleware: `morgan`, `helmet`, `express.json`, `urlencoded`, `compression`.
+   - Gắn router gốc: `app.use('/', router)`.
+   - Middleware xử lý 404 + error handler.
+
+4) **Kết nối MongoDB** (`src/dbs/init.mongodb.js`)
+   - Lấy config từ `src/configs/config.mongodb.js`.
+   - Tạo kết nối Mongoose (singleton) với `maxPoolSize: 50`.
+
+---
+
+## 3) Luồng request tổng quan (request pipeline)
+
+```
+Client -> Express (app.js)
+       -> Router gốc (routes/index.js)
+       -> Middleware apiKey + permissions
+       -> Router /v1/api (routes/access/index.js)
+       -> Controller
+       -> Service
+       -> Model/DB
+       -> Response chuẩn hoá
+```
+
+- Mọi request đi vào `/v1/api/*` phải có **x-api-key** hợp lệ.
+- Những route yêu cầu login sẽ còn cần **x-client-id** và **authorization** (token).
+
+---
+
+## 4) Luồng middleware bảo vệ
+
+### 4.1 apiKey + permissions (`src/auth/checkAuth.js`)
+
+**apiKey**
+1) Lấy `x-api-key` từ header.
+2) Nếu không có → throw `BadRequestError`.
+3) Tìm key trong DB (`apiKey.service.js`).
+4) Nếu hợp lệ → gắn `req.objKey` rồi `next()`.
+
+**permissions(permission)**
+1) Kiểm tra `req.objKey.permissions`.
+2) Nếu không có quyền → 403.
+
+Trong `routes/index.js` đang bật:
+- `router.use(apiKey)`
+- `router.use(permissions('0000'))`
+
+=> **Tất cả** route `/v1/api/*` phải có API key hợp lệ + quyền `0000`.
+
+---
+
+## 5) Luồng auth chi tiết
+
+### 5.1 Signup (`POST /v1/api/shop/signup`)
+
+**Tuyến**:
+`routes/access/index.js` → `access.controller.js` → `access.service.js`
+
+**Các bước trong `AccessService.SignUp`:**
+1) Check email tồn tại (`shopModel.findOne`).
+2) Hash password (`bcrypt.hash`).
+3) Tạo shop (`shopModel.create`).
+4) Sinh `privateKey`, `publicKey` (random bytes).
+5) Lưu key vào DB (`KeyTokenService.createToken`).
+6) Tạo cặp token (`createTokenPair`).
+7) Trả response `Created`.
+
+**Model liên quan:**
+- `Shop` (`src/model/schema.js`)
+- `Key` (`src/model/keytoken.model.js`)
+
+---
+
+### 5.2 Login (`POST /v1/api/shop/login`)
+
+**Tuyến**:
+`routes/access/index.js` → `access.controller.js` → `access.service.js`
+
+**Các bước trong `AccessService.login`:**
+1) Tìm shop theo email (`findByEmail`).
+2) So sánh password (`bcrypt.compare`).
+3) Sinh `privateKey`, `publicKey` (random bytes).
+4) Tạo cặp token (`createTokenPair`).
+5) Lưu/Update key (`KeyTokenService.createToken`).
+6) Trả response `OK`.
+
+---
+
+### 5.3 Logout (`POST /v1/api/shop/logout`)
+
+**Tuyến**:
+`routes/access/index.js` → `authentication` middleware → `access.controller.js` → `AccessService.logout`
+
+**authentication middleware (`src/auth/authUntil.js`)**
+1) Lấy `x-client-id`.
+2) Tìm keyStore theo user (`KeyTokenService.findByID`).
+3) Lấy `authorization` (accessToken).
+4) Verify token với `privateKey` từ keyStore.
+5) Gắn `req.keyStore`, `req.user`, rồi `next()`.
+
+**logout service**
+- Xoá keyStore theo `_id`.
+
+---
+
+## 6) Luồng tạo token
+
+`createTokenPair(payload, publicKey, privateKey)` trong `src/auth/authUntil.js`:
+- Dùng JWT `sign` tạo `accessToken` (2 days) và `refreshToken` (7 days).
+- Verify token ngay sau khi tạo (log ra console).
+
+---
+
+## 7) Dữ liệu / Models
+
+### Shop (`src/model/schema.js`)
+- collection: `shops`
+- fields: name, email, password, status, verify
+
+### KeyToken (`src/model/keytoken.model.js`)
+- collection: `keys`
+- fields: user, publicKey, privateKey, refreshToken, refreshTokensUsed
+
+### ApiKey (`src/model/keyAPI.js`)
+- collection: `ApiKeys`
+- fields: key, status, permissions
+
+---
+
+## 8) File quan trọng theo nhiệm vụ
+
+- **Entry / App**: `src/sever.js`, `src/untils/app.js`
+- **Routing**: `src/routes/index.js`, `src/routes/access/index.js`
+- **Auth + Middleware**: `src/auth/checkAuth.js`, `src/auth/authUntil.js`
+- **Service**: `src/services/access.service.js`, `src/services/keyToken.service.js`
+- **Models**: `src/model/schema.js`, `src/model/keytoken.model.js`, `src/model/keyAPI.js`
+- **DB init**: `src/dbs/init.mongodb.js`
+
+---
+
+## 9) Ghi chú nhanh khi quay lại
+
+- **Bắt buộc** gửi `x-api-key` cho mọi request `/v1/api/*`.
+- Với route cần đăng nhập (logout), cần thêm:
+  - `x-client-id: <shopId>`
+  - `authorization: <accessToken>`
+- Token được ký bằng **privateKey random**, không phải RSA thật.
+- Port mặc định chạy ở `3052` (server) và DB config lấy từ `.env`.
+
+---
+
+## 10) Luồng thư mục (folder flow theo chức năng)
+
+```
+Request
+  -> routes
+  -> controller
+  -> services
+  -> model/db
+  -> response
+```
+
+```
+Auth bảo vệ
+  -> checkAuth (apiKey, permissions)
+  -> authUntil (authentication, createTokenPair)
+```
+
+```
+Kết nối DB
+  -> config.mongodb.js
+  -> init.mongodb.js
+  -> models
+```
+
+---
+
+Nếu cần mình có thể bổ sung thêm:
+- sơ đồ sequence bằng mermaid
+- mô tả chi tiết từng header / payload / response mẫu
+- check lỗi/bug tiềm ẩn

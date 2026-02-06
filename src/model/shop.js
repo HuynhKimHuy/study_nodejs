@@ -1,7 +1,7 @@
 
 import mongoose, { Schema } from "mongoose";
 
-const DOCUMENT_NAME = "shop"
+const DOCUMENT_NAME = "Shop"
 const COLECCTION_NAME  = 'shops'
 
 const ShopSchema  = new mongoose.Schema({
@@ -37,6 +37,6 @@ const ShopSchema  = new mongoose.Schema({
   });
 
 // ✅ Xuất model theo cú pháp ES6
-const Shops = mongoose.model(DOCUMENT_NAME, ShopSchema);
+const Shop = mongoose.model(DOCUMENT_NAME, ShopSchema);
 
-export default Shops;
+export default Shop;

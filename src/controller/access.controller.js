@@ -2,6 +2,21 @@ import { Created, OK} from "../core/success.response.js"
 import AccessService from "../services/access.service.js"
 
 class AccessController{
+
+     handleRefreshToken = async (req,res,next )=>{
+         new OK({
+            message: "Get Token success",
+            statusCode:200,
+            metadata: await AccessService.handleRefreshToken(
+                {
+                    user :req.user ,
+                    keyStore : req.keyStore,
+                    refreshToken: req.refreshToken
+                }
+            )
+         }).send(res)
+    }
+
     login = async (req,res,next )=>{
          new OK({
             message: "login Ok",
@@ -11,7 +26,6 @@ class AccessController{
     }
     
     signUp = async (req,res,next) => { 
-
             new Created({
                 message:"Regisered OK",
                 statusCode:200,
@@ -19,6 +33,7 @@ class AccessController{
             }).send(res)
 
     }
+
     logout = async (req,res,next)=>{
         new OK({
             message:'logout ok',

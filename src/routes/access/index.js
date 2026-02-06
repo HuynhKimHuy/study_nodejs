@@ -17,4 +17,5 @@ AccessRouter.use(authentication)
 
 AccessRouter.post('/shop/logout', asyncHandler(accessController.logout))
 
+AccessRouter.post('/shop/handleRefreshToken', asyncHandler(accessController.handleRefreshToken))
 export default AccessRouter
