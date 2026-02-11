@@ -31,6 +31,7 @@ const productSchema = new Schema(
 
 const electronicSchema = new Schema(
     {
+        product_shop: { type: Schema.Types.ObjectId, ref: "Shop" },
         manufacturer: { type: String, required: true },
         size: String,
         color: String
@@ -43,6 +44,7 @@ const electronicSchema = new Schema(
 
 const clothingSchema = new Schema(
     {
+        product_shop: { type: Schema.Types.ObjectId, ref: "Shop" },
         brand: { type: String, required: true },
         size: String,
         material: String
@@ -59,4 +61,4 @@ export const Electronic = model('Electronic', electronicSchema)
 
 export const Clothing = model('Clothing', clothingSchema)
 
-export default Product
+

@@ -1,21 +1,13 @@
-import express from 'express'
+import { Router } from 'express'
 import accessController from '../../controller/access.controller.js'
-import {asyncHandler} from '../../helpers/asyncHandler.js'
+import { asyncHandler } from '../../helpers/asyncHandler.js'
 import { authentication } from '../../auth/authUntil.js'
 
-const AccessRouter = express.Router()
+const AccessRouter = Router()
 
-
-AccessRouter.post('/shop/signup',asyncHandler(accessController.signUp))
-
-
-AccessRouter.post('/shop/login',asyncHandler(accessController.login))
-//authentication 
-
-// Check header xem có mang theoi client ID và AccessToken không 
+AccessRouter.post('/shop/login', asyncHandler(accessController.login))
 AccessRouter.use(authentication)
-
 AccessRouter.post('/shop/logout', asyncHandler(accessController.logout))
-
 AccessRouter.post('/shop/handleRefreshToken', asyncHandler(accessController.handleRefreshToken))
+
 export default AccessRouter
