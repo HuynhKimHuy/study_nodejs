@@ -1,4 +1,4 @@
-import { Product as ProductModel, Electronic as ElectronicModel, Clothing as ClothingModel } from '../model/product.js'
+import { Product as ProductModel, Electronic as ElectronicModel, Clothing as ClothingModel , Furniture as FurnitureModel} from '../model/product.js'
 import { BadRequestError } from '../core/error.respone.js'
 class ProductFactory {
     static async createProduct(type, payload = {}) {
@@ -68,6 +68,16 @@ class Clothing extends Product {
         const newClothing = await ClothingModel.create(this.product_attributes)
         if (!newClothing) throw new BadRequestError('create Clothings Error')
         const newPrduct = await super.createProduct(newClothing._id)
+        return newPrduct
+    }
+}
+
+class Furniture extends Product {
+    async createProduct() {
+        const newElectronic = await FurnitureModel.create(this.product_attributes)
+        if (!newElectronic) throw new BadRequestError('create Electronic Error')
+
+        const newPrduct = await super.createProduct(newElectronic._id)
         return newPrduct
     }
 }
