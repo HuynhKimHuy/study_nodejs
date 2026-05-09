@@ -7,12 +7,14 @@ import CartRouter from './cart/index.js'
 import CheckoutRouter from './checkout/index.js'
 import { apiKey, permissions } from '../auth/checkAuth.js'
 import InventoryRouter from './inventory/index.js'
+import pushToLogDiscord from '../middleware/index.js'
 
 const router = Router()
 
 // Signup is public - no apiKey required
+router.use(pushToLogDiscord)
 router.use('/v1/api/shop/signup', ShopRouter)
-
+// router.use(pushToLogDiscord)
 // All other routes require apiKey
 router.use(apiKey)
 router.use(permissions('0000'))

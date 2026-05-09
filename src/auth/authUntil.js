@@ -28,7 +28,7 @@ export const authentication = asyncHandler(async (req, res, next) => {
     const keyStore = await KeyTokenService.findByID(userID)
     if (!keyStore) throw new AuthFailureError('Cannot find Keystore')
 
-        
+
     if (req.headers[HEADER.REFRESHTOKEN]) {
         try {
             const refreshToken = req.headers[HEADER.REFRESHTOKEN]
@@ -56,7 +56,7 @@ export const authentication = asyncHandler(async (req, res, next) => {
     catch (error) {
         throw error
     }
-    
+
 })
 
 
@@ -64,7 +64,7 @@ export const createTokenPair = async (payload, publicKey, privateKey) => {
     const accessToken = JWT.sign(payload, privateKey, { expiresIn: '2days' })
     const refreshToken = JWT.sign(payload, privateKey, { expiresIn: '7 days' })
 
-    JWT.verify(accessToken, publicKey, (error, decode) => {
+    JWT.verify(accessToken, privateKey, (error, decode) => {
         if (error) {
             console.log(`error verify : `, error);
 
