@@ -2,8 +2,10 @@ import { Product as ProductModel, Electronic as ElectronicModel, Clothing as Clo
 import mongoose from 'mongoose'
 import { BadRequestError } from '../core/error.respone.js'
 import { findAllDraftsForShop, findAllProduct, findPublishedProducts, publicProductByShop, unPublicProductByShop, searchProductByUser, findProducts, updateProductById } from '../model/repositories/product.repo.js'
-import { removeEmptyFields, updateNestedObjectParser } from '../untils/getShopdata.js'
+import { convertToObjectId, removeEmptyFields, updateNestedObjectParser } from '../untils/getShopdata.js'
 import { insertInventory } from "../model/repositories/inventory.repo.js"
+import NotifiService from './notifi.service.js'
+import { findShopNameById } from '../model/repositories/shop.repo.js'
 class ProductFactory {
 
     static productRegistry = {}
@@ -93,6 +95,25 @@ class Product {
                 shopId: this.product_shop,
                 stock: this.product_quantity
             })
+            console.log(this.product_shop);
+            const shopName = await findShopNameById(convertToObjectId(this.product_shop))
+            if (!shopName)
+                throw new BadRequestError('ShopName not found')
+            await NotifiService.postNotiToSystem({
+                type: "ORDER-001",
+                senderId: this.product_shop,
+                receiverId: 1,
+                content: `Sản phẩm ${this.product_name} đã được thêm vào  ${shopName} tạo `,
+                options: {
+                    shopId: this.product_shop,
+                    shopName: shopName,
+                    productName: this.product_name
+                }
+            }).then(() => {
+                console.log('Notification sent successfully');
+            }).catch((error) => {
+                console.error('Error sending notification:', error);
+            });
         }
 
 

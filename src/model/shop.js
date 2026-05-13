@@ -1,4 +1,4 @@
-
+  
 import mongoose, { Schema } from "mongoose";
 
 const DOCUMENT_NAME = "Shop"

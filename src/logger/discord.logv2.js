@@ -23,9 +23,9 @@ class LoggerService {
             console.log(`Logged in as ${this.client.user.tag}!`);
         });
 
-        this.client.login(token).catch(err => {
-            console.error('Failed to login to Discord:', err);
-        });
+        // this.client.login(token).catch(err => {
+        //     console.error('Failed to login to Discord:', err);
+        // });
 
         this.client.on(Events.MessageCreate, message => {
             if (message.author.bot) return; // Ignore messages from bots

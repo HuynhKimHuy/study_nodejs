@@ -22,21 +22,21 @@ class AccessService {
     // check token used? 
     // if true : delete token from keytoken service 
 
-    static handleRefreshToken = async ({keyStore, user, refreshToken} ) => {
-        const {userID, email} = user
+    static handleRefreshToken = async ({ keyStore, user, refreshToken }) => {
+        const { userID, email } = user
         console.log(keyStore.refreshToken);
-        
-        if(keyStore.refreshTokensUsed.includes(refreshToken)){
+
+        if (keyStore.refreshTokensUsed.includes(refreshToken)) {
             await KeyTokenSevice.delectKeyByID(userID)
-            throw new ForbiddenError( "Something was wrong happend")
+            throw new ForbiddenError("Something was wrong happend")
         }
 
-        if(keyStore.refreshToken !== refreshToken) throw new AuthFailureError("shop not registeted 1 ")
-        
-        const foundShop = await findByEmail({email})
-        if(!foundShop) throw new AuthFailureError("shop not registeted 2")
-        
-        const token = await createTokenPair({userID,email},keyStore.publicKey, keyStore.privateKey)
+        if (keyStore.refreshToken !== refreshToken) throw new AuthFailureError("shop not registeted 1 ")
+
+        const foundShop = await findByEmail({ email })
+        if (!foundShop) throw new AuthFailureError("shop not registeted 2")
+
+        const token = await createTokenPair({ userID, email }, keyStore.publicKey, keyStore.privateKey)
 
 
         // update Token 
@@ -50,7 +50,7 @@ class AccessService {
         })
 
         return {
-            user , 
+            user,
             token
         }
 
@@ -142,10 +142,8 @@ class AccessService {
 
         return {
             code: 200,
-            metadata: {
-                shop: getDataShop({ fields: ['_id', 'name', 'email'], object: newShop }),
-                tokens
-            }
+            shop: getDataShop({ fields: ['_id', 'name', 'email'], object: newShop }),
+            tokens
         }
     }
 
