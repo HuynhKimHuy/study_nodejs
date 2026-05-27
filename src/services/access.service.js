@@ -1,9 +1,9 @@
 // lấy schema của shop
 import bcrypt from 'bcrypt'
-import crypto, { verify } from 'crypto'
+import crypto from 'crypto'
 import shopModel from '../model/shop.js'
 import KeytokenService from './keyToken.service.js'
-import { createTokenPair, verifyJWT } from '../auth/authUntil.js'
+import { createTokenPair } from '../auth/authUntil.js'
 import { getDataShop } from '../untils/getShopdata.js'
 import { BadRequestError, AuthFailureError, ForbiddenError } from '../core/error.respone.js'
 import findByEmail from './shop.service.js'
@@ -24,39 +24,32 @@ class AccessService {
 
     static handleRefreshToken = async ({ keyStore, user, refreshToken }) => {
         const { userID, email } = user
-        console.log(keyStore.refreshToken);
 
         if (keyStore.refreshTokensUsed.includes(refreshToken)) {
             await KeyTokenSevice.delectKeyByID(userID)
             throw new ForbiddenError("Something was wrong happend")
         }
 
-        if (keyStore.refreshToken !== refreshToken) throw new AuthFailureError("shop not registeted 1 ")
+        if (keyStore.refreshToken !== refreshToken) {
+            throw new AuthFailureError("shop not registeted 1 ")
+        }
 
         const foundShop = await findByEmail({ email })
         if (!foundShop) throw new AuthFailureError("shop not registeted 2")
 
-        const token = await createTokenPair({ userID, email }, keyStore.publicKey, keyStore.privateKey)
-
+        const token = await createTokenPair({ userID, email }, keyStore.privateKey)
 
         // update Token 
         await keyStore.updateOne({
-            $set: {
-                refreshToken: token.refreshToken
-            },
-            $addToSet: {
-                refreshTokensUsed: refreshToken
-            }
+            $set: { refreshToken: token.refreshToken },
+            $addToSet: { refreshTokensUsed: refreshToken }
         })
 
-        return {
-            user,
-            token
-        }
+        return { user, token }
 
     }
 
-    static login = async ({ email, password, refreshToken = null }) => {
+    static login = async ({ email, password }) => {
 
         const foundShop = await findByEmail({ email })
 
@@ -74,12 +67,17 @@ class AccessService {
         const publicKey = crypto.randomBytes(64).toString('hex')
 
 
-        const tokens = await createTokenPair({ userID: foundShop._id, email: foundShop.email }, publicKey, privateKey)
+        const tokens = await createTokenPair({ userID: foundShop._id, email: foundShop.email }, privateKey)
         if (!tokens.refreshToken) {
             throw new BadRequestError("khong co request token")
         }
 
-        await KeytokenService.createToken({ userID: foundShop._id, publicKey: publicKey, privateKey: privateKey, refreshToken: tokens.refreshToken })
+        await KeytokenService.createToken({
+            userID: foundShop._id,
+            publicKey: publicKey,
+            privateKey: privateKey,
+            refreshToken: tokens.refreshToken
+        })
 
         return {
             shop: getDataShop({ fields: ['_id', 'name', 'email'], object: foundShop }),
@@ -95,9 +93,9 @@ class AccessService {
 
         const hashPassword = await bcrypt.hash(password, 10)
         const newShop = await shopModel.create({
-            name: name || "Kim Huy",
-            email: email || "huy@email.com",
-            password: hashPassword || password,
+            name: name,
+            email: email,
+            password: hashPassword, 
             roles: [roles.SHOP]
         })
 
@@ -133,11 +131,9 @@ class AccessService {
             throw new BadRequestError("Key store Error")
         }
 
-        console.log(`keyShop::`, keyShop)
-
-        const tokens = await createTokenPair({ userID: newShop._id, email }, publicKey, privateKey)
+        const tokens = await createTokenPair({ userID: newShop._id, email }, privateKey)
         if (tokens) {
-            console.log(`Created token success :: ${tokens}`);
+            console.log(`Created token success :: ${tokens}`)
         }
 
         return {

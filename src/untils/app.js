@@ -11,7 +11,7 @@ import router from '../routes/index.js';
 // mongoose.set('debug', true)
 import Database from '../dbs/init.mongodb.js'
 import Redis from '../dbs/init.redis.js'
-
+import cookieParser from 'cookie-parser'
 import ProductServiceTest from '../test/product.test.js'
 
 
@@ -21,13 +21,14 @@ Database.getInstance()
 Redis.getInstance()
 // ProductServiceTest.purschaseProduct({ productId: 'product:001', quantity: 2 }).catch(err => console.error('[Test] Error:', err))
 const app = express();
-
+app.use(cookieParser())
 
 // init middle ware
 app.use(
     cors({
         origin: ["http://localhost:3000"],
         methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        credentials: true,
         allowedHeaders: [
             "Content-Type",
             "x-api-key",

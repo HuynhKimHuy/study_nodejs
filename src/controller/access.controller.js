@@ -1,43 +1,49 @@
-import { Created, OK} from "../core/success.response.js"
+import { Created, OK } from "../core/success.response.js"
 import AccessService from "../services/access.service.js"
+import { clearRefreshTokenCookie, setRefreshTokenCookie } from "../helpers/authCookie.js"
 
-class AccessController{
+class AccessController {
+    handleRefreshToken = async (req, res) => {
+        const result = await AccessService.handleRefreshToken(
+            {
+                user: req.user,
+                keyStore: req.keyStore,
+                refreshToken: req.refreshToken
+            }
+        )
 
-     handleRefreshToken = async (req,res,next )=>{
-         new OK({
-            message: "Get Token success",
-            statusCode:200,
-            metadata: await AccessService.handleRefreshToken(
-                {
-                    user :req.user ,
-                    keyStore : req.keyStore,
-                    refreshToken: req.refreshToken
-                }
-            )
-         }).send(res)
-    }
-
-    login = async (req,res,next )=>{
-         new OK({
-            message: "login Ok",
-            statusCode:200,
-            metadata: await AccessService.login(req.body)
-         }).send(res)
-    }
-    
-    signUp = async (req,res,next) => { 
-            new Created({
-                message:"Regisered OK",
-                statusCode:200,
-                metadata: await AccessService.SignUp(req.body)
-            }).send(res)
-
-    }
-
-    logout = async (req,res,next)=>{
+        setRefreshTokenCookie(res, result?.token?.refreshToken)
         new OK({
-            message:'logout ok',
-            statusCode:200,
+            message: "Get Token success",
+            statusCode: 200,
+            metadata: result
+        }).send(res)
+    }
+
+    login = async (req, res) => {
+        const result = await AccessService.login(req.body)
+
+        setRefreshTokenCookie(res, result?.tokens?.refreshToken)
+        new OK({
+            message: "login Ok",
+            statusCode: 200,
+            metadata: result
+        }).send(res)
+    }
+
+    signUp = async (req, res) => {
+        new Created({
+            message: "Regisered OK",
+            statusCode: 200,
+            metadata: await AccessService.SignUp(req.body)
+        }).send(res)
+    }
+
+    logout = async (req, res) => {
+        clearRefreshTokenCookie(res)
+        new OK({
+            message: 'logout ok',
+            statusCode: 200,
             metadata: await AccessService.logout(req.keyStore)
         }).send(res)
     }

@@ -8,7 +8,6 @@ const NotiRouter = express.Router();
 NotiRouter.use(apiKey);
 NotiRouter.use(permissions('0000'));
 
-
 NotiRouter.get("", asyncHandler(NotiController.ListNotiByUserId))
 
 export default NotiRouter;

@@ -12,7 +12,6 @@ const keyTokenSchema = new Schema({
     publicKey:{
         type:String,
         require:true,
-
     },
     privateKey:{
          type:String,

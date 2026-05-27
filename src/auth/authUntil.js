@@ -2,6 +2,7 @@ import JWT from 'jsonwebtoken'
 import { asyncHandler } from '../helpers/asyncHandler.js'
 import { AuthFailureError } from '../core/error.respone.js'
 import KeyTokenService from '../services/keyToken.service.js'
+import { getRefreshTokenFromCookies } from '../helpers/authCookie.js'
 
 
 const HEADER = {
@@ -21,6 +22,12 @@ step5 : check keystore with userID
 step6 : If ok => Next
 */
 
+const attachAuthContext = (req, keyStore, decode, refreshToken = null) => {
+    req.keyStore = keyStore
+    req.user = decode
+    if (refreshToken) req.refreshToken = refreshToken
+}
+
 export const authentication = asyncHandler(async (req, res, next) => {
     const userID = req.headers[HEADER.CLIENT_ID]
     if (!userID) throw new AuthFailureError('Invalid Request')
@@ -29,51 +36,29 @@ export const authentication = asyncHandler(async (req, res, next) => {
     if (!keyStore) throw new AuthFailureError('Cannot find Keystore')
 
 
-    if (req.headers[HEADER.REFRESHTOKEN]) {
-        try {
-            const refreshToken = req.headers[HEADER.REFRESHTOKEN]
-            const decode = JWT.verify(refreshToken, keyStore.privateKey)
-
-            req.keyStore = keyStore
-            req.user = decode
-            req.refreshToken = refreshToken
-            return next()
-        } catch (error) {
-            throw error
-        }
+    const refreshToken = getRefreshTokenFromCookies(req) || req.headers[HEADER.REFRESHTOKEN]
+    if (refreshToken) {
+        const decode = JWT.verify(refreshToken, keyStore.privateKey)
+        attachAuthContext(req, keyStore, decode, refreshToken)
+        return next()
     }
 
     const accessToken = req.headers[HEADER.AUTHORIZATION]
     if (!accessToken) throw new AuthFailureError('Invalid Request')
 
-    try {
-        const decode = JWT.verify(accessToken, keyStore.privateKey)
-        if (String(userID) !== String(decode.userID)) throw new AuthFailureError('Invalid UserID')
-        req.keyStore = keyStore
-        req.user = decode
-        return next()
-    }
-    catch (error) {
-        throw error
-    }
+    const decode = JWT.verify(accessToken, keyStore.privateKey)
+    if (String(userID) !== String(decode.userID)) throw new AuthFailureError('Invalid UserID')
+    attachAuthContext(req, keyStore, decode)
+    return next()
 
 })
 
 
-export const createTokenPair = async (payload, publicKey, privateKey) => {
-    const accessToken = JWT.sign(payload, privateKey, { expiresIn: '2days' })
-    const refreshToken = JWT.sign(payload, privateKey, { expiresIn: '7 days' })
+export const createTokenPair = async (payload, privateKey) => {
+    // normalize expiresIn values (no leading spaces)
+    const accessToken = JWT.sign(payload, privateKey, { expiresIn: '5m' })
+    const refreshToken = JWT.sign(payload, privateKey, { expiresIn: '1d' })
 
-    JWT.verify(accessToken, privateKey, (error, decode) => {
-        if (error) {
-            console.log(`error verify : `, error);
-
-        }
-        else {
-            console.log(`decode verify`, decode);
-
-        }
-    })
     return { accessToken, refreshToken }
 }
 
